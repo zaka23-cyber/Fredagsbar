@@ -1,0 +1,265 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fredagsbarens event-API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5001"
+    }
+  ],
+  "paths": {
+    "/events": {
+      "get": {
+        "summary": "Hent alle events",
+        "responses": {
+          "200": {
+            "description": "Liste over alle events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Event"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Opret event",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/EventResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/events/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EventId"
+        }
+      ],
+      "get": {
+        "summary": "Hent ét event",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/EventResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Slet event",
+        "responses": {
+          "204": {
+            "description": "Event slettet. Ingen body."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/events/{id}/signups": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EventId"
+        }
+      ],
+      "post": {
+        "summary": "Tilmeld person",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Navnet må ikke kun indeholde mellemrum.",
+                    "example": "Zakaria"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/EventResponse"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/events/{id}/signups/{name}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/EventId"
+        },
+        {
+          "name": "name",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "delete": {
+        "summary": "Afmeld person",
+        "responses": {
+          "204": {
+            "description": "Person afmeldt. Ingen body."
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "EventId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "schemas": {
+      "NewEvent": {
+        "type": "object",
+        "required": ["title", "date", "capacity"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Titlen må ikke kun indeholde mellemrum.",
+            "example": "Quizaften"
+          },
+          "date": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Dato som tekst. Må ikke kun indeholde mellemrum.",
+            "example": "2026-11-13"
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 1,
+            "example": 3
+          }
+        }
+      },
+      "Event": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/NewEvent"
+          },
+          {
+            "type": "object",
+            "required": ["id", "participants"],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 1
+              },
+              "participants": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "example": ["Anna", "Bo"]
+              }
+            }
+          }
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "EventResponse": {
+        "description": "Event med deltagerliste",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Event"
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Titel, dato eller navn mangler eller er ugyldigt, eller capacity er ikke et positivt heltal.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Eventet findes ikke, eller tilmeldingen findes ikke ved afmelding.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Eventet er fuldt, eller personen er allerede tilmeldt.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}
